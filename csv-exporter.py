@@ -1,35 +1,55 @@
 import argparse
 import pandas
+from pandas import DataFrame
 from pandasql import sqldf
+import pyap
 
 """
 We're using these CSV columns in the destination, in order:
 GSS_NUM,FNAME,LNAME,CITY,STATE,PHONE_NUM,NSS_NUM,EMAIL,user_login,role,display_name
 """
-FNAME=2
-LNAME=3
-CITY=4
-STATE=5
-PHONE_NUM=6
-NSS_NUM=7
-EMAIL=8
-user_login=9
-role=10
-display_name=11
+destination_column_names = [
+    "GSS_NUM",
+    "FNAME",
+    "LNAME",
+    "CITY",
+    "STATE",
+    "PHONE_NUM",
+    "NSS_NUM",
+    "EMAIL",
+    "user_login",
+    "role",
+    "display_name"
+]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--incoming-file-name", type=str, required=True, help="Specify the CSV file that new records shall be selected from.")
-parser.add_argument("--comparison-file-name", type=str, required=True, help="Specify the CSV file that new records checked against.")
-parser.add_argument("--destination-file-name", type=str, required=True, help="Specify the CSV file that new records will be written to.")
-parser.add_argument("--GSS-num-start-range", type=int, required=True, help="A GSS Number will be added to each record. This specifies what the first GSS number will be.")
-parser.add_argument("--incoming-first-name-header", type=str, required=True, help="Specify the column that the member's first name will be in.")
-parser.add_argument("--incoming-last-name-header", type=str, required=True, help="Specify the column that the member's last name will be in.")
+parser.add_argument("--incoming-file-name", type=str, required=True,
+                    help="Specify the CSV file that new records shall be selected from.")
+parser.add_argument("--comparison-file-name", type=str, required=True,
+                    help="Specify the CSV file that new records checked against.")
+parser.add_argument("--destination-file-name", type=str, required=True,
+                    help="Specify the CSV file that new records will be written to.")
+parser.add_argument("--GSS-num-start-range", type=int, required=True,
+                    help="A GSS Number will be added to each record. This specifies what the first GSS number will be.")
+parser.add_argument("--incoming-first-name-header", type=str, required=True,
+                    help="Specify the column that the member's first name will be in.")
+parser.add_argument("--incoming-last-name-header", type=str, required=True,
+                    help="Specify the column that the member's last name will be in.")
 parser.add_argument("--incoming-city", type=str, help="Specify the column that the member's city will be in.")
 parser.add_argument("--incoming-state", type=str, help="Specify the column that the member's state will be in.")
-parser.add_argument("--incoming-phone", type=str, required=True, help="Specify the column that the member's phone number will be in.")
-parser.add_argument("--incoming-nss-number", type=int, required=True, help="Specify the column that the member's NSS number will be in.")
-parser.add_argument("--incoming-email", type=str, required=True, help="Specify the column that the member's email will be in.")
-parser.add_argument("--incoming-role", type=str, default="subscriber", help="Specify the column that the member's role will be in.")
+parser.add_argument("--incoming-address", type=str, default=None, help="""
+    Specify the column the member's address will be in.
+    Note this overrides --incoming-city and --incoming-state arguments
+    """
+                    )
+parser.add_argument("--incoming-phone", type=str, required=True,
+                    help="Specify the column that the member's phone number will be in.")
+parser.add_argument("--incoming-nss-number", type=str, required=True,
+                    help="Specify the column that the member's NSS number will be in.")
+parser.add_argument("--incoming-email", type=str, required=True,
+                    help="Specify the column that the member's email will be in.")
+parser.add_argument("--incoming-role", type=str, default="role",
+                    help="Specify the column that the member's role will be in.")
 args = parser.parse_args()
 
 #
@@ -40,12 +60,17 @@ user_dataframe = None
 csv_records = None
 incoming_first_name_header = args.incoming_first_name_header
 incoming_last_name_header = args.incoming_last_name_header
-destination_records = []
+destination_records = [destination_column_names]
+gss_number = args.GSS_num_start_range
 try:
-    comparison_dataframe=pandas.read_csv(args.comparison_file_name)
-    incoming_csv_reader=pandas.read_csv(args.incoming_file_name)
-    destination_csv_file=pandas.
-    for index, row in incoming_csv_reader.iterrows():
+
+    comparison_dataframe = pandas.read_csv(args.comparison_file_name).sort_values(by=destination_column_names[0])
+    incoming_dataframe = pandas.read_csv(args.incoming_file_name)
+
+    destination_dataframe = DataFrame(
+        data=destination_column_names
+    )
+    for index, row in incoming_dataframe.iterrows():
         existing_user = comparison_dataframe.query(
             "FNAME=='{}' and LNAME=='{}'".format(
                 row[incoming_first_name_header],
@@ -53,11 +78,46 @@ try:
             )
         )
         if existing_user.empty:
-            print("{} {}: Will need to be imported\n".format(
-                row.get(incoming_first_name_header),
-                row.get(incoming_last_name_header)
-                )
+            addresses = pyap.parse(row[args.incoming_address], country="US")
+            city = None if len(addresses) == 0 else (
+                row[args.incoming_city] if args.incoming_address == None else addresses[0].city)
+            state = None if len(addresses) == 0 else (
+                row[args.incoming_state] if args.incoming_address == None else addresses[0].region1)
+
+            destination_records.append(
+                [
+                    gss_number,
+                    row[incoming_first_name_header],
+                    row[incoming_last_name_header],
+                    city,
+                    state,
+                    row[args.incoming_phone],
+                    row[args.incoming_nss_number],
+                    row[args.incoming_email],
+                    f"{row[incoming_first_name_header]}.{row[incoming_last_name_header]}".lower().replace(" ", ""),
+                    row[args.incoming_role] if args.incoming_role in incoming_dataframe.columns else "subscriber",
+                    f"{row[incoming_first_name_header]} {row[incoming_last_name_header]}"
+                ]
             )
+            gss_number += 1
+    temp_data_frame = DataFrame(destination_records)
+    print("Entries to be imported:\n")
+    temp_data_frame.to_csv(
+        args.destination_file_name,
+        index=False,
+        header=False,
+        encoding='utf-8',
+        lineterminator="\n"
+        )
+
+    # destination_dataframe = pandas.concat(
+    #     [
+    #         destination_dataframe,
+    #         DataFrame(destination_records)
+    #     ]
+    # )
+
+
 
 except FileNotFoundError:
     print(f'Comparison file must exist...')
@@ -65,7 +125,3 @@ except pandas.errors.EmptyDataError:
     print('The file is empty')
 except OSError:
     print(f'incoming file name just exist...')
-
-
-
-
