@@ -1,5 +1,4 @@
 import argparse
-import csv
 import pandas
 from pandasql import sqldf
 
@@ -44,15 +43,13 @@ incoming_last_name_header = args.incoming_last_name_header
 destination_records = []
 try:
     comparison_dataframe=pandas.read_csv(args.comparison_file_name)
-    incoming_csv_reader = csv.DictReader(
-        open(args.incoming_file_name, mode='r')
-    )
-
-    for row in incoming_csv_reader:
+    incoming_csv_reader=pandas.read_csv(args.incoming_file_name)
+    destination_csv_file=pandas.
+    for index, row in incoming_csv_reader.iterrows():
         existing_user = comparison_dataframe.query(
             "FNAME=='{}' and LNAME=='{}'".format(
-                row.get(incoming_first_name_header),
-                row.get(incoming_last_name_header)
+                row[incoming_first_name_header],
+                row[incoming_last_name_header]
             )
         )
         if existing_user.empty:
