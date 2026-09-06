@@ -29,6 +29,7 @@ parser.add_argument("--comparison-file-name", type=str, required=True,
                     help="Specify the CSV file that new records checked against.")
 parser.add_argument("--destination-file-name", type=str, required=True,
                     help="Specify the CSV file that new records will be written to.")
+parser.add_argument("--write-new-truth-to", type=str, default=None, help="A CSV to write your consolidate truth to.")
 parser.add_argument("--GSS-num-start-range", type=int, required=True,
                     help="A GSS Number will be added to each record. This specifies what the first GSS number will be.")
 parser.add_argument("--incoming-first-name-header", type=str, required=True,
@@ -60,16 +61,16 @@ user_dataframe = None
 csv_records = None
 incoming_first_name_header = args.incoming_first_name_header
 incoming_last_name_header = args.incoming_last_name_header
-destination_records = [destination_column_names]
+destination_records = []
 gss_number = args.GSS_num_start_range
 try:
 
     comparison_dataframe = pandas.read_csv(args.comparison_file_name).sort_values(by=destination_column_names[0])
     incoming_dataframe = pandas.read_csv(args.incoming_file_name)
 
-    destination_dataframe = DataFrame(
-        data=destination_column_names
-    )
+    # destination_dataframe = DataFrame(
+    #     columns=destination_column_names
+    # )
     for index, row in incoming_dataframe.iterrows():
         existing_user = comparison_dataframe.query(
             "FNAME=='{}' and LNAME=='{}'".format(
@@ -100,22 +101,29 @@ try:
                 ]
             )
             gss_number += 1
-    temp_data_frame = DataFrame(destination_records)
+    destination_dataframe = DataFrame(
+        columns=destination_column_names,
+        data=destination_records
+    )
     print("Entries to be imported:\n")
-    temp_data_frame.to_csv(
+    destination_dataframe.to_csv(
         args.destination_file_name,
         index=False,
-        header=False,
         encoding='utf-8',
         lineterminator="\n"
         )
+    if args.write_new_truth_to is not None:
+        consolidated_truth_dataframe = pandas.concat(
+            [
+                comparison_dataframe,
+                destination_dataframe
+            ]
+        )
+        consolidated_truth_dataframe.to_csv(
+            args.write_new_truth_to,
+            index=False
+        )
 
-    # destination_dataframe = pandas.concat(
-    #     [
-    #         destination_dataframe,
-    #         DataFrame(destination_records)
-    #     ]
-    # )
 
 
 
