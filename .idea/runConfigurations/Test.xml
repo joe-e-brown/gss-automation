@@ -1,0 +1,27 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Test" type="PythonConfigurationType" factoryName="Python">
+    <module name="GSS User CSV Exporter" />
+    <option name="ENV_FILES" value="" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="SDK_NAME" value="~/IdeaProjects/GSS User CSV Exporter/GSS User CSV Exporter/venv" />
+    <option name="WORKING_DIRECTORY" value="" />
+    <option name="IS_MODULE_SDK" value="false" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <option name="DEBUG_JUST_MY_CODE" value="false" />
+    <option name="RUN_TOOL" value="" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/csv-exporter.py" />
+    <option name="PARAMETERS" value="--incoming-file-name=&quot;/run/user/1000/gvfs/smb-share:server=storage,share=jbrown/GSS/2024 - Round Two/GSS Members 2024.csv&quot; --comparison-file-name=&quot;/run/user/1000/gvfs/smb-share:server=storage,share=jbrown/GSS/2024/2024_GSS_members-minus-admins-with-wp-fields.csv&quot; --destination-file-name=&quot;/run/user/1000/gvfs/smb-share:server=storage,share=jbrown/GSS/2024 - Round Two/GSS Member Delta 2024.csv&quot; --write-new-truth-to=&quot;/run/user/1000/gvfs/smb-share:server=storage,share=jbrown/GSS/2024 - Round Two/GSS Membership Consolidated Truth 2024.csv&quot; --GSS-num-start-range=100 --incoming-first-name=FName --incoming-last-name=LName --incoming-phone=&quot;Phone#&quot; --incoming-nss-number=&quot;NSS#&quot; --incoming-email=&quot;Email Address&quot; --incoming-role=subscriber --incoming-address=Address" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="MODULE_MODE" value="false" />
+    <option name="REDIRECT_INPUT" value="false" />
+    <option name="INPUT_FILE" value="" />
+    <method v="2" />
+  </configuration>
+</component>
