@@ -3,6 +3,7 @@ import pandas
 from pandas import DataFrame
 from pandasql import sqldf
 import pyap
+from dataclasses import dataclass
 
 """
 We're using these CSV columns in the destination, in order:
@@ -11,6 +12,7 @@ GSS_NUM,FNAME,LNAME,CITY,STATE,PHONE_NUM,NSS_NUM,EMAIL,user_login,role,display_n
 destination_column_names = [
     "GSS_NUM",
     "FNAME",
+    "MNAME",
     "LNAME",
     "CITY",
     "STATE",
@@ -34,6 +36,10 @@ parser.add_argument("--GSS-num-start-range", type=int, required=True,
                     help="A GSS Number will be added to each record. This specifies what the first GSS number will be.")
 parser.add_argument("--incoming-first-name-header", type=str, required=True,
                     help="Specify the column that the member's first name will be in.")
+#
+parser.add_argument("--incoming-middle-name-header", type=str, required=True,
+                    help="Specify the column that the member's middle name will be in.")
+#
 parser.add_argument("--incoming-last-name-header", type=str, required=True,
                     help="Specify the column that the member's last name will be in.")
 parser.add_argument("--incoming-city", type=str, help="Specify the column that the member's city will be in.")
@@ -53,6 +59,10 @@ parser.add_argument("--incoming-role", type=str, default="role",
                     help="Specify the column that the member's role will be in.")
 args = parser.parse_args()
 
+@dataclass
+class Address:
+    city: str
+    region1: str
 #
 #
 #
@@ -60,6 +70,7 @@ pysqldf = lambda q: sqldf(q, globals())
 user_dataframe = None
 csv_records = None
 incoming_first_name_header = args.incoming_first_name_header
+incoming_middle_name_header = args.incoming_middle_name_header
 incoming_last_name_header = args.incoming_last_name_header
 destination_records = []
 gss_number = args.GSS_num_start_range
@@ -79,16 +90,22 @@ try:
             )
         )
         if existing_user.empty:
-            addresses = pyap.parse(row[args.incoming_address], country="US")
-            city = None if len(addresses) == 0 else (
-                row[args.incoming_city] if args.incoming_address == None else addresses[0].city)
-            state = None if len(addresses) == 0 else (
-                row[args.incoming_state] if args.incoming_address == None else addresses[0].region1)
-
+            try:
+                addresses = pyap.parse(row[args.incoming_address], country="US")
+            except KeyError as e:
+                addresses = [
+                    Address(
+                        city=row[args.incoming_city],
+                        region1=row[args.incoming_state]
+                    )
+                ]
+            city = addresses[0].city
+            state = addresses[0].region1
             destination_records.append(
                 [
                     gss_number,
                     row[incoming_first_name_header],
+                    row[incoming_middle_name_header],
                     row[incoming_last_name_header],
                     city,
                     state,
@@ -111,7 +128,7 @@ try:
         index=False,
         encoding='utf-8',
         lineterminator="\n"
-        )
+    )
     if args.write_new_truth_to is not None:
         consolidated_truth_dataframe = pandas.concat(
             [
