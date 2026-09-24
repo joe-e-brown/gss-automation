@@ -4,6 +4,7 @@ from pandas import DataFrame
 from pandasql import sqldf
 import pyap
 from dataclasses import dataclass
+import builtins
 
 """
 We're using these CSV columns in the destination, in order:
@@ -24,39 +25,110 @@ destination_column_names = [
     "display_name"
 ]
 
+arg_parse_args = [
+    {
+        "name_or_flags": "--incoming-file-name",
+        "type": str,
+        "required": True,
+        "help": "Specify the CSV file that new records shall be selected from."
+    },
+    {
+        "name_or_flags": "--comparison-file-name",
+        "type": str,
+        "required": True,
+        "help": "Specify the CSV file that new records checked against."
+    },
+    {
+        "name_or_flags": "--destination-file-name",
+        "type": str,
+        "required": True,
+        "help": "Specify the CSV file that new records will be written to."
+    },
+    {
+        "name_or_flags": "--write-new-truth-to",
+        "type": str,
+        "required": True,
+        "help": "A CSV to write your consolidate truth to."
+    },
+    {
+        "name_or_flags": "--GSS-num-start-range",
+        "type": int,
+        "required": True,
+        "help": "A GSS Number will be added to each record. This specifies what the first GSS number will be."
+    },
+    {
+        "name_or_flags": "--incoming-first-name-header",
+        "type": str,
+        "required": True,
+        "help": "Specify the column that the member's first name will be in."
+    },
+    {
+        "name_or_flags": "--incoming-middle-name-header",
+        "type": str,
+        "required": True,
+        "help": "Specify the column that the member's middle name will be in."
+    },
+    {
+        "name_or_flags": "--incoming-last-name-header",
+        "type": str,
+        "required": True,
+        "help": "Specify the column that the member's last name will be in."
+    },
+    {
+        "name_or_flags": "--incoming-city",
+        "type": str,
+        "required": False,
+        "help": "Specify the column that the member's city will be in."
+    },
+    {
+        "name_or_flags": "--incoming-state",
+        "type": str,
+        "required": False,
+        "help": "Specify the column that the member's state will be in."
+    },
+    {
+        "name_or_flags": "--incoming-address",
+        "type": str,
+        "required": False,
+        "help": "Specify the column the member's address will be in.\nNote this overrides --incoming-city and --incoming-state arguments"
+    },
+    {
+        "name_or_flags": "--incoming-phone",
+        "type": str,
+        "required": False,
+        "help": "Specify the column that the member's phone number will be in."
+    },
+    {
+        "name_or_flags": "--incoming-nss-number",
+        "type": str,
+        "required": True,
+        "help": "Specify the column that the member's NSS number will be in."
+    },
+    {
+        "name_or_flags": "--incoming-email",
+        "type": str,
+        "required": True,
+        "help": "Specify the column that the member's email will be in."
+    },
+    {
+        "name_or_flags": "--incoming-role",
+        "type": str,
+        "default": "role",
+        "required": False,
+        "help": "Specify the column that the member's role will be in."
+    }
+]
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--incoming-file-name", type=str, required=True,
-                    help="Specify the CSV file that new records shall be selected from.")
-parser.add_argument("--comparison-file-name", type=str, required=True,
-                    help="Specify the CSV file that new records checked against.")
-parser.add_argument("--destination-file-name", type=str, required=True,
-                    help="Specify the CSV file that new records will be written to.")
-parser.add_argument("--write-new-truth-to", type=str, default=None, help="A CSV to write your consolidate truth to.")
-parser.add_argument("--GSS-num-start-range", type=int, required=True,
-                    help="A GSS Number will be added to each record. This specifies what the first GSS number will be.")
-parser.add_argument("--incoming-first-name-header", type=str, required=True,
-                    help="Specify the column that the member's first name will be in.")
-#
-parser.add_argument("--incoming-middle-name-header", type=str, required=True,
-                    help="Specify the column that the member's middle name will be in.")
-#
-parser.add_argument("--incoming-last-name-header", type=str, required=True,
-                    help="Specify the column that the member's last name will be in.")
-parser.add_argument("--incoming-city", type=str, help="Specify the column that the member's city will be in.")
-parser.add_argument("--incoming-state", type=str, help="Specify the column that the member's state will be in.")
-parser.add_argument("--incoming-address", type=str, default=None, help="""
-    Specify the column the member's address will be in.
-    Note this overrides --incoming-city and --incoming-state arguments
-    """
-                    )
-parser.add_argument("--incoming-phone", type=str,
-                    help="Specify the column that the member's phone number will be in.")
-parser.add_argument("--incoming-nss-number", type=str, required=True,
-                    help="Specify the column that the member's NSS number will be in.")
-parser.add_argument("--incoming-email", type=str, required=True,
-                    help="Specify the column that the member's email will be in.")
-parser.add_argument("--incoming-role", type=str, default="role",
-                    help="Specify the column that the member's role will be in.")
+for argument in arg_parse_args:
+    parser.add_argument(
+        argument.get("name_or_flags"),
+        type=argument.get("type"),
+        default=argument.get("default", None),
+        required=argument.get("required"),
+        help=argument.get("help")
+    )
+
 args = parser.parse_args()
 
 @dataclass
