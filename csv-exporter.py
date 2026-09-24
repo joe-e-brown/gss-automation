@@ -4,7 +4,7 @@ from pandas import DataFrame
 from pandasql import sqldf
 import pyap
 from dataclasses import dataclass
-import builtins
+from nameparser import parse as parse_name
 
 """
 We're using these CSV columns in the destination, in order:
@@ -57,21 +57,27 @@ arg_parse_args = [
         "help": "A GSS Number will be added to each record. This specifies what the first GSS number will be."
     },
     {
+        "name_or_flags": "--incoming-full-name-header",
+        "type": str,
+        "required": False,
+        "help": "Specify the column header if the member's full name is being passed in one string."
+    },
+    {
         "name_or_flags": "--incoming-first-name-header",
         "type": str,
-        "required": True,
+        "required": False,
         "help": "Specify the column that the member's first name will be in."
     },
     {
         "name_or_flags": "--incoming-middle-name-header",
         "type": str,
-        "required": True,
+        "required": False,
         "help": "Specify the column that the member's middle name will be in."
     },
     {
         "name_or_flags": "--incoming-last-name-header",
         "type": str,
-        "required": True,
+        "required": False,
         "help": "Specify the column that the member's last name will be in."
     },
     {
@@ -155,10 +161,19 @@ try:
     #     columns=destination_column_names
     # )
     for index, row in incoming_dataframe.iterrows():
+        incoming_user_full_name = parse_name(row[args.incoming_full_name_header]) if args.incoming_full_name_header else parse_name(
+            "{} {} {}".format(
+                row[incoming_first_name_header],
+                row[incoming_middle_name_header],
+                row[incoming_last_name_header]
+            )
+        )
         existing_user = comparison_dataframe.query(
             "FNAME=='{}' and LNAME=='{}'".format(
-                row[incoming_first_name_header],
-                row[incoming_last_name_header]
+                incoming_user_full_name.given,
+                incoming_user_full_name.family
+                # row[incoming_first_name_header],
+                # row[incoming_last_name_header]
             )
         )
         if existing_user.empty:
