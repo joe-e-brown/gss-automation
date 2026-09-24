@@ -34,6 +34,5 @@ This utility:
 ## Todo
 Add CLI Arguments:
 - Remove requirement for phone number
-- incoming-full-name-header
-- refactor argparse to use dict
+- Add incoming-full-name-header
 - refactor to parse first/middle/last names from one string
