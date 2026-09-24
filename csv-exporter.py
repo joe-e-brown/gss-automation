@@ -49,7 +49,7 @@ parser.add_argument("--incoming-address", type=str, default=None, help="""
     Note this overrides --incoming-city and --incoming-state arguments
     """
                     )
-parser.add_argument("--incoming-phone", type=str, required=True,
+parser.add_argument("--incoming-phone", type=str,
                     help="Specify the column that the member's phone number will be in.")
 parser.add_argument("--incoming-nss-number", type=str, required=True,
                     help="Specify the column that the member's NSS number will be in.")
@@ -109,7 +109,7 @@ try:
                     row[incoming_last_name_header],
                     city,
                     state,
-                    row[args.incoming_phone],
+                    row[args.incoming_phone] if args.incoming_pone else "",
                     row[args.incoming_nss_number],
                     row[args.incoming_email],
                     f"{row[incoming_first_name_header]}.{row[incoming_last_name_header]}".lower().replace(" ", ""),
