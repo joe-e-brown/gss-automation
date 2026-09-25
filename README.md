@@ -36,6 +36,7 @@ This utility:
 
 - Refactor checking attendance list to:
   - Check first against email
-  - Check secondly against name
+  - Check secondly against NSS number 
+  - Check lastly against FNAME,LNAME
 - Add CLI Arguments:
   - To customize delta & consolidated truth CSV headers
