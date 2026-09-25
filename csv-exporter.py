@@ -1,12 +1,91 @@
 import argparse
 import pandas
+from nameparser._config_shim import Constants, CONSTANTS
 from pandas import DataFrame
 from pandasql import sqldf
 import pyap
 from dataclasses import dataclass
-from nameparser import parse as parse_name
+from nameparser import HumanName
 from sqlalchemy.engine import row
 import math
+
+class GssName(HumanName):
+    def __init__(
+        self,
+        full_name: str = "",
+        constants: Constants | None = CONSTANTS,
+        string_format: str | None = None,
+        initials_format: str | None = None,
+        initials_delimiter: str | None = None,
+        initials_separator: str | None = None,
+        suffix_delimiter: str | None = None,
+        first: str | list[str] | None = None,
+        middle: str | list[str] | None = None,
+        last: str | list[str] | None = None,
+        title: str | list[str] | None = None,
+        suffix: str | list[str] | None = None,
+        nickname: str | list[str] | None = None,
+        maiden: str | list[str] | None = None,
+        nss_number: str | None = None,
+        email_address: str | None=None
+    ):
+        super().__init__(
+            full_name,
+            constants,
+            string_format,
+            initials_format,
+            initials_delimiter,
+            initials_separator,
+            suffix_delimiter,
+            first,
+            middle,
+            last,
+            title,
+            suffix,
+            nickname,
+            maiden,
+        )
+        self.nss_number = nss_number
+        self.email = email_address
+
+def _check_for_user_in_consolidated_truth(
+        candidate: GssName,
+        reference_data_frame: DataFrame
+) -> DataFrame:
+    """
+    This will check against three member attributes in this sequence:
+    - email
+    - nss number
+    - first and last name
+    :param candidate:
+    :param reference_data_frame:
+    :return: retrieved existing user DataFrame
+    """
+    email_query = "EMAIL=='{}'".format(
+        candidate.email
+    )
+    nss_number_query = "NSS_NUM=='{}'".format(
+        candidate.nss_number
+    )
+    first_last_name_query = "FNAME=='{}' and LNAME=='{}'".format(
+        candidate.first,
+        candidate.last
+    )
+    query_list=[
+        email_query,
+        nss_number_query,
+        first_last_name_query
+    ]
+
+    not_found = True
+    query_index = 0
+    matching_user = None
+    not_found = True
+    while not_found:
+        matching_user = reference_data_frame.query(query_list[query_index])
+        query_index+=1
+        not_found = matching_user.empty and query_index < len(query_list)
+    return matching_user
 
 def _get_city_state(location: str) -> tuple[str,str]:
     # This function is called when city & state aren't passed in their own columns.
@@ -195,21 +274,23 @@ if __name__ == "__main__":
         incoming_dataframe = pandas.read_csv(args.incoming_file_name)
 
         for index, row in incoming_dataframe.iterrows():
-            incoming_user_full_name = parse_name(
-                row[args.incoming_full_name_header]
-            ) if args.incoming_full_name_header else parse_name(
-                "{} {} {}".format(
-                    row[incoming_first_name_header],
-                    row[incoming_middle_name_header],
-                    row[incoming_last_name_header]
-                )
+            incoming_user_full_name = GssName(
+                row[args.incoming_full_name_header],
+                email_address=row[args.incoming_email],
+                nss_number=row[args.incoming_nss_number]
+            )\
+            if args.incoming_full_name_header else GssName(
+                first=row[incoming_first_name_header],
+                middle=row[incoming_middle_name_header],
+                last=row[incoming_last_name_header],
+                email_address=row[args.incoming_email],
+                nss_number=row[args.incoming_nss_number]
             )
-            existing_user = comparison_dataframe.query(
-                "FNAME=='{}' and LNAME=='{}'".format(
-                    incoming_user_full_name.given,
-                    incoming_user_full_name.family
-                )
+            existing_user = _check_for_user_in_consolidated_truth(
+                incoming_user_full_name,
+                comparison_dataframe
             )
+
             if existing_user.empty:
                 # Parse city & State
                 incoming_location = row[args.incoming_address] if args.incoming_address else f"{row[args.incoming_city]} {row[args.incoming_state]}"
@@ -218,17 +299,17 @@ if __name__ == "__main__":
                 destination_records.append(
                     [
                         gss_number,
-                        incoming_user_full_name.given,
+                        incoming_user_full_name.first,
                         incoming_user_full_name.middle,
-                        incoming_user_full_name.family,
+                        incoming_user_full_name.last,
                         city,
                         state,
                         row[args.incoming_phone] if args.incoming_phone else "",
                         row[args.incoming_nss_number],
                         row[args.incoming_email],
-                        f"{incoming_user_full_name.given}.{incoming_user_full_name.family}".lower().replace(" ",""),
+                        f"{incoming_user_full_name.first}.{incoming_user_full_name.last}".lower().replace(" ",""),
                         row[args.incoming_role] if args.incoming_role in incoming_dataframe.columns else "subscriber",
-                        f"{incoming_user_full_name.given} {incoming_user_full_name.family}"
+                        f"{incoming_user_full_name.first} {incoming_user_full_name.last}"
                     ]
                 )
                 gss_number += 1
