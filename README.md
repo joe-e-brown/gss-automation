@@ -33,5 +33,9 @@ This utility:
 | --incoming-role               | Specify the column that the member's role will be in                                                                   | F                                                      |
 
 ## Todo
-Add CLI Arguments:
-- parse city/state from VERY incomplete information
+
+- Refactor checking attendance list to:
+  - Check first against email
+  - Check secondly against name
+- Add CLI Arguments:
+  - To customize delta & consolidated truth CSV headers
