@@ -61,13 +61,13 @@ def _check_for_user_in_consolidated_truth(
     :param reference_data_frame:
     :return: retrieved existing user DataFrame
     """
-    email_query = "EMAIL=='{}'".format(
+    email_query = "SELECT * FROM reference_data_frame where EMAIL=='{}' COLLATE NOCASE".format(
         candidate.email
     )
-    nss_number_query = "NSS_NUM=='{}'".format(
+    nss_number_query = "SELECT * FROM reference_data_frame where NSS_NUM=={}".format(
         candidate.nss_number
     )
-    first_last_name_query = "FNAME=='{}' and LNAME=='{}'".format(
+    first_last_name_query = "SELECT * FROM reference_data_frame where FNAME=='{}' and LNAME=='{}' COLLATE NOCASE".format(
         candidate.first,
         candidate.last
     )
@@ -77,12 +77,11 @@ def _check_for_user_in_consolidated_truth(
         first_last_name_query
     ]
 
-    not_found = True
     query_index = 0
     matching_user = None
     not_found = True
     while not_found:
-        matching_user = reference_data_frame.query(query_list[query_index])
+        matching_user = sqldf(query_list[query_index])
         query_index+=1
         not_found = matching_user.empty and query_index < len(query_list)
     return matching_user
