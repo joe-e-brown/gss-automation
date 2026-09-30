@@ -63,14 +63,15 @@ def _check_for_user_in_consolidated_truth(
     """
     email_query = "SELECT * FROM reference_data_frame where EMAIL=='{}' COLLATE NOCASE".format(
         candidate.email
-    )
+    ) if len(candidate.email.strip()) != 0 else ""
     nss_number_query = "SELECT * FROM reference_data_frame where NSS_NUM=={}".format(
         candidate.nss_number
-    )
+    ) if len(candidate.nss_number.strip()) != 0 else ""
     first_last_name_query = "SELECT * FROM reference_data_frame where FNAME=='{}' and LNAME=='{}' COLLATE NOCASE".format(
         candidate.first,
         candidate.last
-    )
+    ) if (len(candidate.first.strip()) != 0 and len(candidate.last.strip()) != 0 ) else ""
+
     query_list=[
         email_query,
         nss_number_query,
@@ -81,7 +82,10 @@ def _check_for_user_in_consolidated_truth(
     matching_user = None
     not_found = True
     while not_found:
-        matching_user = sqldf(query_list[query_index])
+        if len(query_list[query_index]) ==0:
+            matching_user = DataFrame()
+        else:
+            matching_user = sqldf(query_list[query_index])
         query_index+=1
         not_found = matching_user.empty and query_index < len(query_list)
     return matching_user
